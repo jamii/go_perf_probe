@@ -81,19 +81,28 @@ func printTypeNames(logs []Log) error {
 }
 
 func readTypeName(firstmoduledata elf.Symbol, noptrdata *elf.Section, rodata *elf.Section, typePtr uint64, nameOff uint64) string {
+	if typePtr == 0 {
+		return "<type not captured>"
+	}
+
 	modulePtr := firstmoduledata.Value
+	for {
+		// runtime.moduledata.types +296 uintptr
+		typesPtr := readUint64(noptrdata, modulePtr-noptrdata.Addr+296)
 
-	// runtime.moduledata.types +296 uintptr
-	typesPtr := readUint64(noptrdata, modulePtr-noptrdata.Addr+296)
+		// runtime.moduledata.etypes +304 uintptr
+		etypesPtr := readUint64(noptrdata, modulePtr-noptrdata.Addr+304)
 
-	// runtime.moduledata.etypes +304 uintptr
-	etypesPtr := readUint64(noptrdata, modulePtr-noptrdata.Addr+304)
-
-	if typePtr >= typesPtr && typePtr < etypesPtr {
-		len, bytesRead := readUvarint(rodata, typesPtr-rodata.Addr+nameOff+1) // varint?
-		return readString(rodata, typesPtr-rodata.Addr+nameOff+1+uint64(bytesRead), int(len))
-	} else {
-		panic("TODO moduledata.next")
+		if typePtr >= typesPtr && typePtr < etypesPtr {
+			len, bytesRead := readUvarint(rodata, typesPtr-rodata.Addr+nameOff+1) // varint?
+			return readString(rodata, typesPtr-rodata.Addr+nameOff+1+uint64(bytesRead), int(len))
+		} else {
+			// runtime.moduledata.next +576 *moduledata
+			modulePtr := readUint64(noptrdata, modulePtr-noptrdata.Addr+576)
+			if modulePtr == 0 {
+				return "<type not found>"
+			}
+		}
 	}
 }
 
