@@ -2,8 +2,16 @@ package main
 
 import (
 	"debug/elf"
+	"encoding/binary"
 	"fmt"
 )
+
+func main() {
+	err := process()
+	if err != nil {
+		panic(err)
+	}
+}
 
 func process() error {
 	file, err := elf.Open("./main")
@@ -24,22 +32,38 @@ func process() error {
 		}
 	}
 
-	//data := elf.Data()
-	_ = firstmoduledata
-
-	fmt.Println(firstmoduledata.Value)
+	noptrdata := file.Section(".noptrdata")
 	rodata := file.Section(".rodata")
-	fmt.Println(rodata.Offset, rodata.Offset+rodata.Size)
 
-	debug_ranges := file.Section(".debug_ranges")
-	fmt.Println(debug_ranges.Offset, debug_ranges.Offset+debug_ranges.Size)
+	fmt.Println(readTypeName(firstmoduledata, noptrdata, rodata, uint64(14192)))
 
 	return nil
 }
 
-func main() {
-	err := process()
-	if err != nil {
-		panic(err)
-	}
+func readTypeName(firstmoduledata elf.Symbol, noptrdata *elf.Section, rodata *elf.Section, nameOff uint64) string {
+	// runtime.moduledata.types +296 uintptr
+	typesPtr := readUint64(noptrdata, firstmoduledata.Value-noptrdata.Addr+296)
+	len, bytesRead := readUvarint(rodata, typesPtr-rodata.Addr+nameOff+1) // varint?
+	return readString(rodata, typesPtr-rodata.Addr+nameOff+1+uint64(bytesRead), int(len))
+
+	// runtime.moduledata.etypes +304 uintptr
+	// {typ: 4842496, hash: 3383894864, str: 14192}
+}
+
+func readUint64(section *elf.Section, offset uint64) uint64 {
+	var bytes [8]byte
+	section.ReadAt(bytes[:], int64(offset))
+	return binary.LittleEndian.Uint64(bytes[:])
+}
+
+func readUvarint(section *elf.Section, offset uint64) (uint64, int) {
+	var bytes [binary.MaxVarintLen64]byte
+	section.ReadAt(bytes[:], int64(offset))
+	return binary.Uvarint(bytes[:])
+}
+
+func readString(section *elf.Section, offset uint64, len int) string {
+	bytes := make([]byte, len)
+	section.ReadAt(bytes, int64(offset))
+	return string(bytes)
 }

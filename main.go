@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	fmt.Println("Hi")
+	fmt.Println(make([]string, 10))
 }
