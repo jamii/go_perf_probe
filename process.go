@@ -7,13 +7,13 @@ import (
 )
 
 func main() {
-	err := process()
+	err := readTypeNames()
 	if err != nil {
 		panic(err)
 	}
 }
 
-func process() error {
+func readTypeNames() error {
 	file, err := elf.Open("./main")
 	if err != nil {
 		return err
@@ -35,19 +35,26 @@ func process() error {
 	noptrdata := file.Section(".noptrdata")
 	rodata := file.Section(".rodata")
 
-	fmt.Println(readTypeName(firstmoduledata, noptrdata, rodata, uint64(14192)))
+	fmt.Println(readTypeName(firstmoduledata, noptrdata, rodata, uint64(4842496), uint64(14192)))
 
 	return nil
 }
 
-func readTypeName(firstmoduledata elf.Symbol, noptrdata *elf.Section, rodata *elf.Section, nameOff uint64) string {
+func readTypeName(firstmoduledata elf.Symbol, noptrdata *elf.Section, rodata *elf.Section, typePtr uint64, nameOff uint64) string {
+	modulePtr := firstmoduledata.Value
+
 	// runtime.moduledata.types +296 uintptr
-	typesPtr := readUint64(noptrdata, firstmoduledata.Value-noptrdata.Addr+296)
-	len, bytesRead := readUvarint(rodata, typesPtr-rodata.Addr+nameOff+1) // varint?
-	return readString(rodata, typesPtr-rodata.Addr+nameOff+1+uint64(bytesRead), int(len))
+	typesPtr := readUint64(noptrdata, modulePtr-noptrdata.Addr+296)
 
 	// runtime.moduledata.etypes +304 uintptr
-	// {typ: 4842496, hash: 3383894864, str: 14192}
+	etypesPtr := readUint64(noptrdata, modulePtr-noptrdata.Addr+304)
+
+	if typePtr >= typesPtr && typePtr < etypesPtr {
+		len, bytesRead := readUvarint(rodata, typesPtr-rodata.Addr+nameOff+1) // varint?
+		return readString(rodata, typesPtr-rodata.Addr+nameOff+1+uint64(bytesRead), int(len))
+	} else {
+		panic("TODO moduledata.next")
+	}
 }
 
 func readUint64(section *elf.Section, offset uint64) uint64 {
