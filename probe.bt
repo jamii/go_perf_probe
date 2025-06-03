@@ -1,0 +1,74 @@
+config = { missing_probes = "warn" }
+
+uprobe:/home/jamie/go-perf-probe/main:runtime.mallocgc {
+    @main_pid = pid;
+    $size = (uint64) reg("ax");
+    $typ = (uint64) (uint32) reg("bx");
+    if ($typ == 0) {
+        $typ = @typ[tid];
+    }
+    @typNameOff[$typ] = *($typ + 40);
+    @typCount[$typ] = sum(1);
+    @typSize[$typ] = sum($size);
+}
+
+uprobe:/home/jamie/go-perf-probe/main:runtime.makechan {
+    @typ[tid] = (uint32) reg("ax")
+}
+
+uprobe:/home/jamie/go-perf-probe/main:runtime.makeslicecopy {
+    @typ[tid] = (uint32) reg("ax")
+}
+
+uprobe:/home/jamie/go-perf-probe/main:runtime.growslice {
+    @typ[tid] = (uint32) reg("si")
+}
+
+uprobe:/home/jamie/go-perf-probe/main:runtime.slicebytetostring {
+    @typ[tid] = 19 // string
+}
+
+// TODO missing_probes="warn" doesn't seem to work currently
+//
+//uprobe:/home/jamie/go-perf-probe/main:runtime.bytealg_MakeNoZero {
+//    @typ[tid] = 17 // bytes
+//}
+//
+//uprobe:/home/jamie/go-perf-probe/main:runtime.rawstring {
+//    @typ[tid] = 17 // bytes
+//}
+
+uprobe:/home/jamie/go-perf-probe/main:runtime.rawbyteslice {
+    @typ[tid] = 17 // bytes
+}
+
+uprobe:/home/jamie/go-perf-probe/main:runtime.rawruneslice {
+   @typ[tid] = 17 // bytes
+}
+
+uprobe:/home/jamie/go-perf-probe/main:runtime.itabAdd {
+    @typ[tid] = 18 // itab
+}
+
+tracepoint:sched:sched_process_exit {
+   if (@main_pid == pid) {
+       exit();
+   }
+}
+
+END {
+    for ($typ_nameOff : @typNameOff) {
+        printf(
+            "{\"TypePtr\": %lu, \"NameOff\": %u, \"Count\": %u, \"Size\": %u}\n",
+            $typ_nameOff.0,
+            $typ_nameOff.1,
+            (uint64) @typCount[$typ_nameOff.0],
+            (uint64) @typSize[$typ_nameOff.0]
+        ); 
+    }
+    clear(@main_pid);
+    clear(@typNameOff);
+    clear(@typCount);
+    clear(@typSize);
+    clear(@typ);
+}
