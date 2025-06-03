@@ -1,10 +1,91 @@
+config = { missing_probes = "warn" }
+
 uprobe:./main:runtime.mallocgc { 
     @main_pid = pid;
+    $typ = reg("bx");
+    if ($typ == 0) {
+        $typ = @typ[tid];
+    }
     printf(
-        "{\"Typ\": %lu, \"NameOff\": %u}\n", 
-        reg("bx"),
-        *(reg("bx") + 40)
+        "{\"Typ\": %lu, \"NameOff\": %u, \"Count\": 0, \"Name\": \"%s\"}\n", 
+        $typ,
+        *($typ + 40),
+        @typName[tid]
     ); 
+}
+
+uprobe:./main:runtime.makechan { 
+    @typ[tid] = reg("ax")
+}
+
+uretprobe:./main:runtime.makechan { 
+    delete(@typ[tid])
+}
+
+uprobe:./main:runtime.makeslicecopy { 
+    @typ[tid] = reg("ax")
+}
+
+uretprobe:./main:runtime.makeslicecopy { 
+    delete(@typ[tid])
+}
+
+uprobe:./main:runtime.growslice { 
+    @typ[tid] = reg("si")
+}
+
+uretprobe:./main:runtime.growslice { 
+    delete(@typ[tid])
+}
+
+uprobe:./main:runtime.slicebytetostring { 
+    @typName[tid] = "byte"
+}
+
+uretprobe:./main:runtime.slicebytetostring { 
+    delete(@typName[tid])
+}
+
+// TODO missing_probes="warn" doesn't seem to work currently
+//
+// uprobe:./main:runtime.bytealg_MakeNoZero { 
+//     @typName[tid] = "byte"
+// }
+// 
+// uretprobe:./main:runtime.bytealg_MakeNoZero { 
+//     delete(@typName[tid])
+// }
+//
+// uprobe:./main:runtime.rawstring { 
+//     @typName[tid] = "byte"
+// }
+// 
+// uretprobe:./main:runtime.rawstring { 
+//     delete(@typName[tid])
+// }
+// 
+// uprobe:./main:runtime.rawbyteslice { 
+//     @typName[tid] = "byte"
+// }
+// 
+// uretprobe:./main:runtime.rawbyteslice { 
+//    delete(@typName[tid])
+// }
+// 
+// uprobe:./main:runtime.rawruneslice { 
+//    @typName[tid] = "byte"
+// }
+//
+// uretprobe:./main:runtime.rawruneslice { 
+//     delete(@typName[tid])
+// }
+
+uprobe:./main:runtime.itabAdd { 
+    @typName[tid] = "itab"
+}
+
+uretprobe:./main:runtime.itabAdd { 
+    delete(@typName[tid])
 }
 
 tracepoint:sched:sched_process_exit {
