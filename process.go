@@ -3,17 +3,55 @@ package main
 import (
 	"debug/elf"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
+	"os/exec"
+	"strings"
 )
 
 func main() {
-	err := readTypeNames()
+	logs, err := trace()
+	if err != nil {
+		panic(err)
+	}
+
+	err = printTypeNames(logs)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func readTypeNames() error {
+type Log struct {
+	Typ     uint64
+	NameOff uint64
+}
+
+func trace() ([]Log, error) {
+	cmd := exec.Command("sudo", "bpftrace", "-q", "./probe.bt")
+	var out strings.Builder
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+	logsJson := out.String()
+	logs := make([]Log, 0, len(logsJson))
+	for _, logJson := range strings.Split(logsJson, "\n") {
+		if logJson == "" {
+			continue
+		}
+		var log Log
+		err := json.Unmarshal([]byte(logJson), &log)
+		if err != nil {
+			return nil, err
+		}
+		logs = append(logs, log)
+	}
+
+	return logs, nil
+}
+
+func printTypeNames(logs []Log) error {
 	file, err := elf.Open("./main")
 	if err != nil {
 		return err
@@ -35,7 +73,9 @@ func readTypeNames() error {
 	noptrdata := file.Section(".noptrdata")
 	rodata := file.Section(".rodata")
 
-	fmt.Println(readTypeName(firstmoduledata, noptrdata, rodata, uint64(4842496), uint64(14192)))
+	for _, log := range logs {
+		fmt.Printf("%#v %q\n", log, readTypeName(firstmoduledata, noptrdata, rodata, log.Typ, log.NameOff))
+	}
 
 	return nil
 }
