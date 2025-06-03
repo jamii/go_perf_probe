@@ -22,8 +22,9 @@ func main() {
 }
 
 type Log struct {
-	Typ     uint64
+	TypePtr uint64
 	NameOff uint64
+	Name    string
 }
 
 func trace() ([]Log, error) {
@@ -74,14 +75,22 @@ func printTypeNames(logs []Log) error {
 	rodata := file.Section(".rodata")
 
 	for _, log := range logs {
-		fmt.Printf("%#v %q\n", log, readTypeName(firstmoduledata, noptrdata, rodata, log.Typ, log.NameOff))
+		name := log.Name
+		if log.Name == "" {
+			name = readTypeName(firstmoduledata, noptrdata, rodata, log)
+		}
+		fmt.Printf("%#v %q\n", log, name)
 	}
 
 	return nil
 }
 
-func readTypeName(firstmoduledata elf.Symbol, noptrdata *elf.Section, rodata *elf.Section, typePtr uint64, nameOff uint64) string {
-	if typePtr == 0 {
+func readTypeName(firstmoduledata elf.Symbol, noptrdata *elf.Section, rodata *elf.Section, log Log) string {
+	if log.Name != "" {
+		return log.Name
+	}
+
+	if log.TypePtr == 0 {
 		return "<type not captured>"
 	}
 
@@ -93,9 +102,9 @@ func readTypeName(firstmoduledata elf.Symbol, noptrdata *elf.Section, rodata *el
 		// runtime.moduledata.etypes +304 uintptr
 		etypesPtr := readUint64(noptrdata, modulePtr-noptrdata.Addr+304)
 
-		if typePtr >= typesPtr && typePtr < etypesPtr {
-			len, bytesRead := readUvarint(rodata, typesPtr-rodata.Addr+nameOff+1) // varint?
-			return readString(rodata, typesPtr-rodata.Addr+nameOff+1+uint64(bytesRead), int(len))
+		if log.TypePtr >= typesPtr && log.TypePtr < etypesPtr {
+			len, bytesRead := readUvarint(rodata, typesPtr-rodata.Addr+log.NameOff+1) // varint?
+			return readString(rodata, typesPtr-rodata.Addr+log.NameOff+1+uint64(bytesRead), int(len))
 		} else {
 			// runtime.moduledata.next +576 *moduledata
 			modulePtr := readUint64(noptrdata, modulePtr-noptrdata.Addr+576)

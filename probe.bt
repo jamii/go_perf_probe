@@ -7,7 +7,7 @@ uprobe:./main:runtime.mallocgc {
         $typ = @typ[tid];
     }
     printf(
-        "{\"Typ\": %lu, \"NameOff\": %u, \"Count\": 0, \"Name\": \"%s\"}\n", 
+        "{\"TypePtr\": %lu, \"NameOff\": %u, \"Count\": 0, \"Name\": \"%s\"}\n", 
         $typ,
         *($typ + 40),
         @typName[tid]
