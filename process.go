@@ -24,7 +24,7 @@ func main() {
 type Log struct {
 	TypePtr uint64
 	NameOff uint64
-	Name    string
+	Count   uint64
 }
 
 func trace() ([]Log, error) {
@@ -74,24 +74,24 @@ func printTypeNames(logs []Log) error {
 	noptrdata := file.Section(".noptrdata")
 	rodata := file.Section(".rodata")
 
+	fmt.Print("{")
 	for _, log := range logs {
-		name := log.Name
-		if log.Name == "" {
-			name = readTypeName(firstmoduledata, noptrdata, rodata, log)
-		}
-		fmt.Printf("%#v %q\n", log, name)
+		fmt.Printf("%q: %d,\n", readTypeName(firstmoduledata, noptrdata, rodata, log), log.Count)
 	}
+	fmt.Print("}")
 
 	return nil
 }
 
 func readTypeName(firstmoduledata elf.Symbol, noptrdata *elf.Section, rodata *elf.Section, log Log) string {
-	if log.Name != "" {
-		return log.Name
-	}
-
 	if log.TypePtr == 0 {
 		return "<type not captured>"
+	}
+	if log.TypePtr == 17 {
+		return "bytes"
+	}
+	if log.TypePtr == 18 {
+		return "itab"
 	}
 
 	modulePtr := firstmoduledata.Value

@@ -2,20 +2,16 @@ config = { missing_probes = "warn" }
 
 uprobe:./main:runtime.mallocgc { 
     @main_pid = pid;
-    $typ = reg("bx");
+    $typ = (uint64) (uint32) reg("bx");
     if ($typ == 0) {
         $typ = @typ[tid];
     }
-    printf(
-        "{\"TypePtr\": %lu, \"NameOff\": %u, \"Count\": 0, \"Name\": \"%s\"}\n", 
-        $typ,
-        *($typ + 40),
-        @typName[tid]
-    ); 
+    @nameOff[$typ] = *($typ + 40);
+    @count[$typ] += 1;
 }
 
 uprobe:./main:runtime.makechan { 
-    @typ[tid] = reg("ax")
+    @typ[tid] = (uint32) reg("ax")
 }
 
 uretprobe:./main:runtime.makechan { 
@@ -23,7 +19,7 @@ uretprobe:./main:runtime.makechan {
 }
 
 uprobe:./main:runtime.makeslicecopy { 
-    @typ[tid] = reg("ax")
+    @typ[tid] = (uint32) reg("ax")
 }
 
 uretprobe:./main:runtime.makeslicecopy { 
@@ -31,7 +27,7 @@ uretprobe:./main:runtime.makeslicecopy {
 }
 
 uprobe:./main:runtime.growslice { 
-    @typ[tid] = reg("si")
+    @typ[tid] = (uint32) reg("si")
 }
 
 uretprobe:./main:runtime.growslice { 
@@ -39,53 +35,53 @@ uretprobe:./main:runtime.growslice {
 }
 
 uprobe:./main:runtime.slicebytetostring { 
-    @typName[tid] = "byte"
+    @typ[tid] = 17 // bytes
 }
 
 uretprobe:./main:runtime.slicebytetostring { 
-    delete(@typName[tid])
+    delete(@typ[tid])
 }
 
 // TODO missing_probes="warn" doesn't seem to work currently
 //
 // uprobe:./main:runtime.bytealg_MakeNoZero { 
-//     @typName[tid] = "byte"
+//     @typ[tid] = 17 // bytes
 // }
 // 
 // uretprobe:./main:runtime.bytealg_MakeNoZero { 
-//     delete(@typName[tid])
+//     delete(@typ[tid])
 // }
 //
 // uprobe:./main:runtime.rawstring { 
-//     @typName[tid] = "byte"
+//     @typ[tid] = 17 // bytes
 // }
 // 
 // uretprobe:./main:runtime.rawstring { 
-//     delete(@typName[tid])
+//     delete(@typ[tid])
 // }
 // 
 // uprobe:./main:runtime.rawbyteslice { 
-//     @typName[tid] = "byte"
+//     @typ[tid] = 17 // bytes
 // }
 // 
 // uretprobe:./main:runtime.rawbyteslice { 
-//    delete(@typName[tid])
+//    delete(@typ[tid])
 // }
 // 
 // uprobe:./main:runtime.rawruneslice { 
-//    @typName[tid] = "byte"
+//    @typ[tid] = 17 // bytes
 // }
 //
 // uretprobe:./main:runtime.rawruneslice { 
-//     delete(@typName[tid])
+//     delete(@typ[tid])
 // }
 
 uprobe:./main:runtime.itabAdd { 
-    @typName[tid] = "itab"
+    @typ[tid] = 18 // itab
 }
 
 uretprobe:./main:runtime.itabAdd { 
-    delete(@typName[tid])
+    delete(@typ[tid])
 }
 
 tracepoint:sched:sched_process_exit {
@@ -95,5 +91,16 @@ tracepoint:sched:sched_process_exit {
 }
 
 END {
+    for ($typ_nameOff : @nameOff) {
+        printf(
+            "{\"TypePtr\": %lu, \"NameOff\": %u, \"Count\": %u}\n",
+            $typ_nameOff.0,
+            $typ_nameOff.1,
+            @count[$typ_nameOff.0]
+        ); 
+    }
     clear(@main_pid);
+    clear(@nameOff);
+    clear(@count);
+    clear(@typ);
 }
