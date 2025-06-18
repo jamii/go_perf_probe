@@ -95,13 +95,13 @@ func readTypeName(firstmoduledata elf.Symbol, noptrdata *elf.Section, rodata *el
 		return "<type not captured>"
 	}
 	if log.TypePtr == 17 {
-		return "bytes"
+		return "<bytes>"
 	}
 	if log.TypePtr == 18 {
-		return "itab"
+		return "<itab>"
 	}
 	if log.TypePtr == 19 {
-		return "string"
+		return "<string>"
 	}
 
 	modulePtr := firstmoduledata.Value

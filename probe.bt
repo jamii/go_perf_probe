@@ -30,21 +30,21 @@ uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.slicebytetostring {
 
 // TODO missing_probes="warn" doesn't seem to work currently
 //
-// uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.bytealg_MakeNoZero { 
-//     @typ[tid] = 17 // bytes
-// }
-// 
-// uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawstring { 
-//     @typ[tid] = 17 // bytes
-// }
-// 
-// uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawbyteslice { 
-//     @typ[tid] = 17 // bytes
-// }
-// 
-// uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawruneslice { 
+//uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.bytealg_MakeNoZero { 
 //    @typ[tid] = 17 // bytes
-// }
+//}
+//
+//uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawstring { 
+//    @typ[tid] = 17 // bytes
+//}
+
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawbyteslice { 
+    @typ[tid] = 17 // bytes
+}
+
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawruneslice { 
+   @typ[tid] = 17 // bytes
+}
 
 uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.itabAdd { 
     @typ[tid] = 18 // itab
