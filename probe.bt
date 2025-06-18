@@ -8,8 +8,8 @@ uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.mallocgc {
         $typ = @typ[tid];
     }
     @typNameOff[$typ] = *($typ + 40);
-    @typCount[$typ] += 1;
-    @typSize[$typ] += $size;
+    @typCount[$typ] = sum(1);
+    @typSize[$typ] = sum($size);
 }
 
 uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.makechan {
@@ -62,8 +62,8 @@ END {
             "{\"TypePtr\": %lu, \"NameOff\": %u, \"Count\": %u, \"Size\": %u}\n",
             $typ_nameOff.0,
             $typ_nameOff.1,
-            @typCount[$typ_nameOff.0],
-            @typSize[$typ_nameOff.0]
+            (uint64) @typCount[$typ_nameOff.0],
+            (uint64) @typSize[$typ_nameOff.0]
         ); 
     }
     clear(@main_pid);
