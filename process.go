@@ -60,7 +60,7 @@ func trace() ([]Log, error) {
 }
 
 func printTypeNames(logs []Log) error {
-	file, err := elf.Open("./main")
+	file, err := elf.Open("/home/jamie/runway/go/run_snapshot_test")
 	if err != nil {
 		return err
 	}
