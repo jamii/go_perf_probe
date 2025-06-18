@@ -1,50 +1,52 @@
 config = { missing_probes = "warn" }
 
-uprobe:./main:runtime.mallocgc { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.mallocgc { 
     @main_pid = pid;
+    $size = (uint64) reg("ax");
     $typ = (uint64) (uint32) reg("bx");
     if ($typ == 0) {
         $typ = @typ[tid];
     }
-    @nameOff[$typ] = *($typ + 40);
-    @count[$typ] += 1;
+    @typNameOff[$typ] = *($typ + 40);
+    @typCount[$typ] += 1;
+    @typSize[$typ] += $size;
 }
 
-uprobe:./main:runtime.makechan { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.makechan { 
     @typ[tid] = (uint32) reg("ax")
 }
 
-uprobe:./main:runtime.makeslicecopy { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.makeslicecopy { 
     @typ[tid] = (uint32) reg("ax")
 }
 
-uprobe:./main:runtime.growslice { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.growslice { 
     @typ[tid] = (uint32) reg("si")
 }
 
-uprobe:./main:runtime.slicebytetostring { 
-    @typ[tid] = 17 // bytes
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.slicebytetostring { 
+    @typ[tid] = 19 // string
 }
 
 // TODO missing_probes="warn" doesn't seem to work currently
 //
-// uprobe:./main:runtime.bytealg_MakeNoZero { 
+// uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.bytealg_MakeNoZero { 
 //     @typ[tid] = 17 // bytes
 // }
 // 
-// uprobe:./main:runtime.rawstring { 
+// uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawstring { 
 //     @typ[tid] = 17 // bytes
 // }
 // 
-// uprobe:./main:runtime.rawbyteslice { 
+// uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawbyteslice { 
 //     @typ[tid] = 17 // bytes
 // }
 // 
-// uprobe:./main:runtime.rawruneslice { 
+// uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawruneslice { 
 //    @typ[tid] = 17 // bytes
 // }
 
-uprobe:./main:runtime.itabAdd { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.itabAdd { 
     @typ[tid] = 18 // itab
 }
 
@@ -55,16 +57,18 @@ tracepoint:sched:sched_process_exit {
 }
 
 END {
-    for ($typ_nameOff : @nameOff) {
+    for ($typ_nameOff : @typNameOff) {
         printf(
-            "{\"TypePtr\": %lu, \"NameOff\": %u, \"Count\": %u}\n",
+            "{\"TypePtr\": %lu, \"NameOff\": %u, \"Count\": %u, \"Size\": %u}\n",
             $typ_nameOff.0,
             $typ_nameOff.1,
-            @count[$typ_nameOff.0]
+            @typCount[$typ_nameOff.0],
+            @typSize[$typ_nameOff.0]
         ); 
     }
     clear(@main_pid);
-    clear(@nameOff);
-    clear(@count);
+    clear(@typNameOff);
+    clear(@typCount);
+    clear(@typSize);
     clear(@typ);
 }

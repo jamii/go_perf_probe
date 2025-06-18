@@ -1,11 +1,13 @@
 package main
 
 import (
+	"cmp"
 	"debug/elf"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"slices"
 	"strings"
 )
 
@@ -14,6 +16,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	slices.SortFunc(logs, func(a Log, b Log) int {
+		return cmp.Compare(a.Size, b.Size)
+	})
 
 	err = printTypeNames(logs)
 	if err != nil {
@@ -25,6 +31,7 @@ type Log struct {
 	TypePtr uint64
 	NameOff uint64
 	Count   uint64
+	Size    uint64
 }
 
 func trace() ([]Log, error) {
@@ -76,7 +83,7 @@ func printTypeNames(logs []Log) error {
 
 	fmt.Print("{")
 	for _, log := range logs {
-		fmt.Printf("%q: %d,\n", readTypeName(firstmoduledata, noptrdata, rodata, log), log.Count)
+		fmt.Printf("%q: {\"Count\": %d, \"Size\": %d},\n", readTypeName(firstmoduledata, noptrdata, rodata, log), log.Count, log.Size)
 	}
 	fmt.Print("}")
 
@@ -92,6 +99,9 @@ func readTypeName(firstmoduledata elf.Symbol, noptrdata *elf.Section, rodata *el
 	}
 	if log.TypePtr == 18 {
 		return "itab"
+	}
+	if log.TypePtr == 19 {
+		return "string"
 	}
 
 	modulePtr := firstmoduledata.Value
