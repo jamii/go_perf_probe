@@ -14,32 +14,16 @@ uprobe:./main:runtime.makechan {
     @typ[tid] = (uint32) reg("ax")
 }
 
-uretprobe:./main:runtime.makechan { 
-    delete(@typ[tid])
-}
-
 uprobe:./main:runtime.makeslicecopy { 
     @typ[tid] = (uint32) reg("ax")
-}
-
-uretprobe:./main:runtime.makeslicecopy { 
-    delete(@typ[tid])
 }
 
 uprobe:./main:runtime.growslice { 
     @typ[tid] = (uint32) reg("si")
 }
 
-uretprobe:./main:runtime.growslice { 
-    delete(@typ[tid])
-}
-
 uprobe:./main:runtime.slicebytetostring { 
     @typ[tid] = 17 // bytes
-}
-
-uretprobe:./main:runtime.slicebytetostring { 
-    delete(@typ[tid])
 }
 
 // TODO missing_probes="warn" doesn't seem to work currently
@@ -48,40 +32,20 @@ uretprobe:./main:runtime.slicebytetostring {
 //     @typ[tid] = 17 // bytes
 // }
 // 
-// uretprobe:./main:runtime.bytealg_MakeNoZero { 
-//     delete(@typ[tid])
-// }
-//
 // uprobe:./main:runtime.rawstring { 
 //     @typ[tid] = 17 // bytes
-// }
-// 
-// uretprobe:./main:runtime.rawstring { 
-//     delete(@typ[tid])
 // }
 // 
 // uprobe:./main:runtime.rawbyteslice { 
 //     @typ[tid] = 17 // bytes
 // }
 // 
-// uretprobe:./main:runtime.rawbyteslice { 
-//    delete(@typ[tid])
-// }
-// 
 // uprobe:./main:runtime.rawruneslice { 
 //    @typ[tid] = 17 // bytes
-// }
-//
-// uretprobe:./main:runtime.rawruneslice { 
-//     delete(@typ[tid])
 // }
 
 uprobe:./main:runtime.itabAdd { 
     @typ[tid] = 18 // itab
-}
-
-uretprobe:./main:runtime.itabAdd { 
-    delete(@typ[tid])
 }
 
 tracepoint:sched:sched_process_exit {
