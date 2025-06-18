@@ -18,7 +18,7 @@ func main() {
 	}
 
 	slices.SortFunc(logs, func(a Log, b Log) int {
-		return cmp.Compare(a.Size, b.Size)
+		return -cmp.Compare(a.Size, b.Size)
 	})
 
 	err = printTypeNames(logs)
