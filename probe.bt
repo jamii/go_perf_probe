@@ -1,6 +1,6 @@
 config = { missing_probes = "warn" }
 
-uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.mallocgc { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.mallocgc {
     @main_pid = pid;
     $size = (uint64) reg("ax");
     $typ = (uint64) (uint32) reg("bx");
@@ -12,41 +12,41 @@ uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.mallocgc {
     @typSize[$typ] += $size;
 }
 
-uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.makechan { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.makechan {
     @typ[tid] = (uint32) reg("ax")
 }
 
-uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.makeslicecopy { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.makeslicecopy {
     @typ[tid] = (uint32) reg("ax")
 }
 
-uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.growslice { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.growslice {
     @typ[tid] = (uint32) reg("si")
 }
 
-uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.slicebytetostring { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.slicebytetostring {
     @typ[tid] = 19 // string
 }
 
 // TODO missing_probes="warn" doesn't seem to work currently
 //
-//uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.bytealg_MakeNoZero { 
+//uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.bytealg_MakeNoZero {
 //    @typ[tid] = 17 // bytes
 //}
 //
-//uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawstring { 
+//uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawstring {
 //    @typ[tid] = 17 // bytes
 //}
 
-uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawbyteslice { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawbyteslice {
     @typ[tid] = 17 // bytes
 }
 
-uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawruneslice { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.rawruneslice {
    @typ[tid] = 17 // bytes
 }
 
-uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.itabAdd { 
+uprobe:/home/jamie/runway/go/run_snapshot_test:runtime.itabAdd {
     @typ[tid] = 18 // itab
 }
 
